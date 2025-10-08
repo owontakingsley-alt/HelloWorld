@@ -1,43 +1,261 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My First Web Page</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f8ff;
-            text-align: center;
-            padding: 50px;
-        }
-        h1 {
-            color: #333;
-        }
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Sticky Notes App</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #e0f7fa;
+      background-attachment: fixed;
+      min-height: 100vh;
+    }
+
+    h1 {
+      text-align: center;
+      color: #004d40;
+      font-weight: 600;
+      text-shadow: 1px 1px 0 white;
+    }
+
+    #noteForm {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    #noteInput {
+      width: 50%;
+      min-width: 200px;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      resize: none;
+      box-shadow: inset 1px 1px 3px rgba(0,0,0,0.1);
+    }
+
+    #colorPicker {
+      width: 45px;
+      height: 45px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background: none;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      box-shadow: 1px 1px 5px rgba(0,0,0,0.1);
+    }
+
+    #addNoteBtn {
+      background-color: #4dd0e1;
+      color: #004d40;
+    }
+
+    #addNoteBtn:hover {
+      background-color: #26c6da;
+    }
+
+    #editRandomBtn {
+      background-color: #ffee58;
+      color: #6d4c41;
+    }
+
+    #editRandomBtn:hover {
+      background-color: #fff176;
+    }
+
+    #notesContainer {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: center;
+    }
+
+    .note {
+      width: 200px;
+      min-height: 150px;
+      padding: 15px 20px 35px;
+      border-radius: 8px;
+      box-shadow: 3px 5px 15px rgba(0, 0, 0, 0.1);
+      position: relative;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      transform: rotate(-1deg);
+      transition: transform 0.2s ease;
+    }
+
+    .note:hover {
+      transform: rotate(0deg) scale(1.02);
+    }
+
+    .deleteBtn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: #f44336;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      padding: 3px 6px;
+      font-size: 12px;
+      cursor: pointer;
+      box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+    }
+
+    .deleteBtn:hover {
+      background: #d32f2f;
+    }
+
+    @media (max-width: 600px) {
+      #noteInput {
+        width: 100%;
+      }
+    }
+  </style>
 </head>
 <body>
-    <h1>Welcome to My First Web Page!</h1>
-    <p>This is a simple page with embedded JavaScript and CSS.</p>
-    <button onclick="changeBackgroundColor()">Change Background Color</button>
 
-    <script>
-        function changeBackgroundColor() {
-            const colors = ['#f0f8ff', '#ffebcd', '#98fb98', '#ffe4e1', '#fafad2'];
-            const randomColor = colors[Math.floor(Math.random() * colors.length)];
-            document.body.style.backgroundColor = randomColor;
+  <h1>📝 Sticky Notes with Color Picker</h1>
+
+  <div id="noteForm">
+    <textarea id="noteInput" rows="3" placeholder="Write your note here..."></textarea>
+    <input type="color" id="colorPicker" value="#fff475" title="Pick a color" />
+    <button id="addNoteBtn">Add Note</button>
+    <button id="editRandomBtn">Edit Random Note</button>
+  </div>
+
+  <div id="notesContainer"></div>
+
+  <script>
+    const noteInput = document.getElementById('noteInput');
+    const colorPicker = document.getElementById('colorPicker');
+    const addNoteBtn = document.getElementById('addNoteBtn');
+    const editRandomBtn = document.getElementById('editRandomBtn');
+    const notesContainer = document.getElementById('notesContainer');
+
+    const sampleTexts = [
+      "Buy groceries",
+      "Call mom",
+      "Plan weekend trip",
+      "Work on side project",
+      "Read 10 pages",
+      "Water the plants",
+      "Write blog post",
+      "Stretch & hydrate"
+    ];
+
+    const pastelColors = [
+      "#FFEBEE", "#E3F2FD", "#E8F5E9", "#FFFDE7", "#F3E5F5", "#FBE9E7",
+      "#FFF8E1", "#E0F2F1", "#F1F8E9", "#F9FBE7", "#EDE7F6"
+    ];
+
+    function getRandomColor() {
+      return pastelColors[Math.floor(Math.random() * pastelColors.length)];
+    }
+
+    function getRandomText() {
+      return sampleTexts[Math.floor(Math.random() * sampleTexts.length)];
+    }
+
+    function loadNotes() {
+      let notes = JSON.parse(localStorage.getItem('stickynotes') || '[]');
+
+      // Inject 8 random notes only if empty
+      if (notes.length === 0) {
+        for (let i = 0; i < 8; i++) {
+          notes.push({ text: getRandomText(), color: getRandomColor() });
         }
-    </script>
+        localStorage.setItem('stickynotes', JSON.stringify(notes));
+      }
+
+      notesContainer.innerHTML = '';
+      notes.forEach((note, index) => {
+        createNoteElement(note.text, note.color, index);
+      });
+    }
+
+    function createNoteElement(text, color, index) {
+      const noteDiv = document.createElement('div');
+      noteDiv.className = 'note';
+      noteDiv.style.background = color;
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'deleteBtn';
+      deleteBtn.textContent = 'X';
+      deleteBtn.onclick = function () {
+        deleteNote(index);
+      };
+
+      noteDiv.appendChild(deleteBtn);
+      noteDiv.appendChild(document.createTextNode(text));
+      notesContainer.appendChild(noteDiv);
+    }
+
+    function saveNote(text, color) {
+      if (!text.trim()) return;
+      const notes = JSON.parse(localStorage.getItem('stickynotes') || '[]');
+      notes.push({ text, color });
+      localStorage.setItem('stickynotes', JSON.stringify(notes));
+      loadNotes();
+      noteInput.value = '';
+    }
+
+    function deleteNote(index) {
+      const notes = JSON.parse(localStorage.getItem('stickynotes') || '[]');
+      notes.splice(index, 1);
+      localStorage.setItem('stickynotes', JSON.stringify(notes));
+      loadNotes();
+    }
+
+    function editRandomNote() {
+      const notes = JSON.parse(localStorage.getItem('stickynotes') || '[]');
+      if (notes.length === 0) {
+        alert('No notes to edit!');
+        return;
+      }
+      const randomIndex = Math.floor(Math.random() * notes.length);
+      const currentNote = notes[randomIndex];
+      const newText = prompt('Edit the note:', currentNote.text);
+      if (newText !== null) {
+        notes[randomIndex].text = newText;
+        localStorage.setItem('stickynotes', JSON.stringify(notes));
+        loadNotes();
+      }
+    }
+
+    addNoteBtn.addEventListener('click', () => {
+      saveNote(noteInput.value, colorPicker.value);
+    });
+
+    noteInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        saveNote(noteInput.value, colorPicker.value);
+      }
+    });
+
+    editRandomBtn.addEventListener('click', editRandomNote);
+
+    // Initial load
+    window.onload = loadNotes;
+  </script>
+
 </body>
 </html>
